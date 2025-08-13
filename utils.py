@@ -1,6 +1,7 @@
 import galois
 import numpy as np
 import random
+from scipy import stats
 from functools import lru_cache  
 import sys
 
@@ -15,7 +16,7 @@ def _Lee_weight(x, p):
 
     Parameters
     ----------
-    x : galois.FieldArray or list
+    x : galois.FieldArray 
         A vector in the finite field F_p^k.
     p : int
         The size of the finite field, which is a prime number.
@@ -27,7 +28,83 @@ def _Lee_weight(x, p):
         of the absolute value of each element and p minus the absolute value
         of each element, effectively counting the "distance" in the Lee metric.
     """
-    return sum(min(abs(xi), p - abs(xi)) for xi in x)
+    sumation = 0
+    for xi in x:
+        xi = int(xi)
+        if xi < p-xi:
+            sumation += xi
+        else:
+            sumation += p - xi
+    return sumation
+
+def Hamming_weight(x, p):
+    """
+    Compute the Hamming weight of a vector x in F_p^k.
+    The Hamming weight is defined as the number of non-zero elements in the vector.
+
+    Parameters
+    ----------
+    x : galois.FieldArray 
+        A vector in the finite field F_p^k.
+    p : int
+        The size of the finite field, which is a prime number.
+
+    Returns
+    -------
+    int
+        The Hamming weight of the vector x, which is the count of non-zero elements.
+    """
+    return np.sum(1 for xi in x if xi != 0)
+
+
+def mt(x, y, p):
+    """
+    Compute the sign matches between two vectors x and y.
+
+    Parameters
+    ----------
+    x : galois.FieldArray 
+        The first vector.
+    y : galois.FieldArray 
+        The second vector.
+    p : int
+        The size of the finite field, which is an odd prime number.
+    Returns
+    -------
+    int
+        The number of positions where the signs of the elements in x and y match.
+    """
+    sumation = 0
+    for xi, yi in zip(x, y):
+        if xi == 0 or yi == 0:
+            continue
+        sign_xi = 1 if xi <= (p-1)//2 else -1
+        sign_yi = 1 if yi <= (p-1)//2 else -1
+        if sign_xi == sign_yi:
+            sumation += 1
+    return sumation
+
+
+def LMP(v, c, p):
+    """
+    Compute the Logaritmic Matching Probability (LMP) between two vectors v and c.
+
+    Parameters
+    ----------
+    v : galois.FieldArray 
+        The first vector.
+    c : galois.FieldArray 
+        The second vector.
+    p : int
+        The size of the finite field, which is an odd prime number.
+    Returns
+    -------
+    float
+        The Logarithmic Matching Probability (LMP) between the two vectors.
+    """
+    X = stats.Binomial(n = Hamming_weight(v, p), p = 0.5)
+    log_pmf_e = X.logpmf(mt(v, c, p))
+    return - log_pmf_e / np.log(2) 
 
 
 def _weighted_choice_int(population, weights):
@@ -66,11 +143,11 @@ def _weighted_choice_int(population, weights):
 
 
 @lru_cache(maxsize=None)
-def _build_dp(k, t, r):
+def _build_dp(k, t, M):
     """
     Construct a dynamic-programming table that answers the question:
 
-        How many length-l suffixes over the alphabet {0, 1, …, r}
+        How many length-l suffixes over the alphabet {0, 1, ..., M}
         have total Lee weight w, when every non-zero symbol may be
         chosen with either sign?
 
@@ -80,7 +157,7 @@ def _build_dp(k, t, r):
 
     Each subsequent row is filled by a convolution with the kernel
 
-        [1, 2, 2, ..., 2]      (length r + 1)
+        [1, 2, 2, ..., 2]      (length M + 1)
 
     where 1 corresponds to choosing the symbol 0 in the new
     coordinate and 2 accounts for the two possible signs of each
@@ -92,7 +169,7 @@ def _build_dp(k, t, r):
         Full vector length.
     t : int
         Target Lee weight.
-    r : int
+    M : int
         Maximum absolute symbol value (p-1/2 for a prime field F_p).
 
     Returns
@@ -104,7 +181,7 @@ def _build_dp(k, t, r):
     dp = np.zeros((k + 1, t + 1), dtype=object)
     dp[:, 0] = 1                      # weight 0 achievable with any length
 
-    kernel = np.ones(r + 1, dtype=object)
+    kernel = np.ones(M + 1, dtype=object)
     kernel[1:] *= 2                  # sign for non-zero addends
 
     for ell in range(1, k + 1):
@@ -114,7 +191,7 @@ def _build_dp(k, t, r):
         curr = dp[ell]
         # convolution via polynomial multiplication
         curr[:] = prev
-        for a in range(1, r + 1):
+        for a in range(1, M + 1):
             curr[a:] += 2 * prev[:-a]
     return dp
 
@@ -200,15 +277,15 @@ def sample_x_uniformly_from_Lee_sphere(p, k, t):
     x : galois.FieldArray 
         A vector sampled uniformly from the Lee sphere.
     '''
-    r  = p // 2
+    M  = p // 2
     GF = galois.GF(p)
-    dp = _build_dp(k, t, r)
+    dp = _build_dp(k, t, M)
 
     x, w_left = [0]*k, t
     for i in range(k):
         tail = k - i - 1
         probs = []
-        choices = range(min(r, w_left) + 1)
+        choices = range(min(M, w_left) + 1)
         for a in choices:
             ways = dp[tail, w_left - a]
             probs.append(ways * (2 if a else 1))

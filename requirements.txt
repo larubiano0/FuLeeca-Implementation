@@ -1,2 +1,3 @@
 galois
 numpy
+scipy==1.16.0
