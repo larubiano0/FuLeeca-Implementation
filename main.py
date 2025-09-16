@@ -70,7 +70,7 @@ else:
 print("signature vector v shape:", v.shape)  # (n/2,)
 print("signature vector v:", v)
 
-# ── 3.  Signature verification ────────────────────────────────
+# ── 4.  Signature verification ────────────────────────────────
 
 valid = signature_verification(v, n, G_pub, m, w_sig, sec_level, salt, p)
 print("verification result    :", "VALID" if valid else "INVALID")
