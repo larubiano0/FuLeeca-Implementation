@@ -1,3 +1,2 @@
-galois
-numpy
-scipy==1.16.0
+galois==0.4.6
+numpy==2.2.6

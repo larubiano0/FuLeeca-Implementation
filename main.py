@@ -6,7 +6,8 @@ import pickle
 import galois
 import importlib
 from key_generation import generate_key
-from signature_generation   import signature_generation
+from signature_generation import signature_generation
+from signature_verification import signature_verification
 
 # from signature_verification import signature_verification
 
@@ -30,22 +31,26 @@ if key_file.is_file():
     GF = galois.GF(p)
     setattr(factory, "FieldArray_65521_17", GF) # THIS MIGHT CHANGE IF YOU GENERATE THE KEY AGAIN, IN GENERAL, COPY THE NAME FROM THE ERROR MESSAGE
     with key_file.open("rb") as fh:
-        G_sec, T = pickle.load(fh)
+        G_sec, G_pub = pickle.load(fh)
     print(f"Loaded keys from {key_file}")
 else:
     # ----------  Generate and store keys  ----------
     print("Generating keys - this can take a while…")
-    G_sec, T = generate_key(p=p, n=n, w_key=w_key)
+    G_sec, G_pub = generate_key(p=p, n=n, w_key=w_key)
 
     with key_file.open("wb") as fh:
-        pickle.dump((G_sec, T), fh)
+        pickle.dump((G_sec, G_pub), fh)
     print(f"Keys saved to {key_file}")
 
 print("secret key G_sec shape:", G_sec.shape)   # (n/2, n)
-print("public key  T     shape:", T.shape)      # (n/2, n/2)
+print("public key  G_pub shape:", G_pub.shape)      # (n/2, n/2)
 
 
 # ── 3.  Signature generation ────────────────────────────────
+
+m = "Hello, FuLeeca!".encode("utf-8")  # Bytes
+w_sig = w_sig_over_n * n
+
 
 if sig_file.is_file():
     # ----------  Load existing signature  ----------
@@ -55,8 +60,6 @@ if sig_file.is_file():
 else:
     # ----------  Generate and store signature  ----------
     print("Generating signature - this can take a while…")
-    w_sig = w_sig_over_n * n
-    m = "Hello, FuLeeca!".encode("utf-8")  # Bytes
     v, salt = signature_generation(
         G_sec=G_sec, n=n, m=m, w_sig=w_sig, w_key=w_key, s=s, n_con=n_con, sec_level=sec_level, p=p
     )
@@ -67,14 +70,7 @@ else:
 print("signature vector v shape:", v.shape)  # (n/2,)
 print("signature vector v:", v)
 
-'''
+# ── 3.  Signature verification ────────────────────────────────
 
-# --------------------------------------------------------------------
-# 4. Verify the signature
-# --------------------------------------------------------------------
-valid = signature_verification(
-            message, salt, sig_bytes, T,
-            p=p, wsig=w_sig, _lambda=lam)
-
+valid = signature_verification(v, n, G_pub, m, w_sig, sec_level, salt, p)
 print("verification result    :", "VALID" if valid else "INVALID")
-'''

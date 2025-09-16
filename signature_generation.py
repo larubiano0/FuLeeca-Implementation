@@ -43,7 +43,7 @@ def signature_generation(G_sec, n, m, w_sig, w_key, s, n_con, sec_level, p):
 
     while True:
         v, c, salt = simple_sign(m_prime, n, k, G_sec, s, p)
-        v = concentrate(v, c, k, G_sec, n_con, w_sig, w_key, sec_level, p)
+        v = concentrate(v, c, n, k, G_sec, n_con, w_sig, w_key, sec_level, p)
         print(w_sig - 2*w_key, utils._Lee_weight(v, p), w_sig, utils.LMP(v, c, p), sec_level + 64)##
         if (w_sig - 2*w_key <= utils._Lee_weight(v, p) <= w_sig) and utils.LMP(v, c, p) >= sec_level + 64:
             return v, salt
@@ -92,7 +92,7 @@ def simple_sign(m_prime, n, k, G_sec, s, p):
     return v, c, salt
 
 
-def concentrate(v, c, k, G_sec, n_con, w_sig, w_key, sec_level, p):
+def concentrate(v, c, n, k, G_sec, n_con, w_sig, w_key, sec_level, p):
     """
     Concentrate the signature vector to meet the required Lee weight and security level.
     
@@ -127,22 +127,20 @@ def concentrate(v, c, k, G_sec, n_con, w_sig, w_key, sec_level, p):
 
     GF = galois.GF(p)
     for _ in range(n_con):
-        v_prime = GF([0]*k)
+        v_prime = GF([0]*n)
         i = 1
-        centinel = False
         while i != -k: # Iterate over {1, -1, ..., k, -k}
             g_i = G_sec[np.abs(i)-1, :] # Get the |i|-th row of G_sec
             v_prime_prime = v + g_i if i > 0 else v - g_i
             if (np.abs(utils.LMP(v_prime_prime, c, p) - (sec_level + 65)) <= np.abs(utils.LMP(v_prime, c, p) - (sec_level + 65))) and ((i in A) or lf == 0):
                 v_prime = v_prime_prime
                 i_prime = i
-                centinel = True
             if i > 0:
                 i = -i
             else:
                 i = -i + 1
-        if centinel:
-            v = v_prime
+        v = v_prime
+        if -i_prime in A:
             A.remove(-i_prime)
         if utils._Lee_weight(v, p) > w_sig - w_key:
             lf = 0

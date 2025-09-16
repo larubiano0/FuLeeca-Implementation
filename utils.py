@@ -1,7 +1,7 @@
 import galois
 import numpy as np
 import random
-from scipy import stats
+from math import lgamma, log
 from functools import lru_cache  
 import sys
 
@@ -102,9 +102,21 @@ def LMP(v, c, p):
     float
         The Logarithmic Matching Probability (LMP) between the two vectors.
     """
-    X = stats.Binomial(n = Hamming_weight(v, p), p = 0.5)
-    log_pmf_e = X.logpmf(mt(v, c, p))
-    return - log_pmf_e / np.log(2) 
+    xv = np.asarray(v, dtype=np.int64) % p
+    yv = np.asarray(c, dtype=np.int64) % p
+
+    nz = (xv != 0) & (yv != 0)
+    k = int(nz.sum())
+    if k == 0:
+        return 0.0
+
+    xsgn = np.where(xv[nz] <= (p - 1)//2, 1, -1)
+    ysgn = np.where(yv[nz] <= (p - 1)//2, 1, -1)
+    mu = int((xsgn == ysgn).sum())
+
+    # LMP = k - log2 C(k, mu)
+    log2C = (lgamma(k+1) - lgamma(mu+1) - lgamma(k-mu+1)) / log(2.0)
+    return float(k - log2C)
 
 
 def _weighted_choice_int(population, weights):
