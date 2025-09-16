@@ -52,7 +52,7 @@ First run will:
 
 Subsequent runs will load the cached artifacts.
 
-### Parameter choice I
+## Parameter choice I
 
 | Symbol | Meaning                                   | Value (default) |
 |-------:|-------------------------------------------|-----------------:|
@@ -66,7 +66,7 @@ Subsequent runs will load the cached artifacts.
 | `n_con`| Concentration iterations                  | `100`            |
 | `sec_level` | Security level (bits)                | `160`            |
 
-### Performance and reproducibility
+## Performance and reproducibility
 
 - **Key generation**: uses a DP-based uniform sampler over Lee spheres (`utils._build_dp`).
 For large (`p, k, t`) this can be slow and memory-intensive (several days and GB of RAM). The repo caches keys/signatures as .pkl.
@@ -75,7 +75,7 @@ For large (`p, k, t`) this can be slow and memory-intensive (several days and GB
   - `signature_generation` uses `secrets.token_bytes(32)` and `SHAKE-256` for per-message challenges.
   - The Lee-sphere sampler uses Python’s random internally. You may set `random.seed(...)` for reproducibility, but doing so is not appropriate for real cryptography.
 
-### Troubleshooting
+## Troubleshooting
 
 1) Unpickling `galois` field arrays
 
@@ -104,7 +104,7 @@ Key generation may take a long time for these parameters. That’s expected for 
 - Ensure you’re using the same `m`, `salt`, and `G_pub` produced during signing.
 - Check that `w_sig_over_n` and other public parameters in `main.py` match signing time.
 
-### API overview
+## API overview
 
 ```python
 key_generation.generate_key(p: int, n: int, w_key: int) -> (G_sec, G_pub)
@@ -129,24 +129,24 @@ utils.py
 ```
 - Helper functions: Lee/Hamming weights, `mt(·,·)` sign-match count, `LMP(·,·)`, uniform Lee-sphere sampler, and `shift_matrix`.
 
-### Extending / experimenting
+## Extending / experimenting
 
 - **Different parameter sets**: adjust `(p, n, w_key, w_sig_over_n, s, n_con, sec_level)` in `main.py`.
 - **Alternative samplers**: swap `sample_x_uniformly_from_Lee_sphere` for a faster (approximate) method if you’re exploring speed/accuracy trade-offs.
 - **Heuristics in concentrate**: the acceptance rule and the target `LMP` can be tuned for experiments.
 
 
-### Acknowledgements
+## Acknowledgements
 
 - Built with the excellent [`galois`](https://mhostetter.github.io/galois/latest) library for finite field arithmetic (thanks to Matt Hostetter).
 
 - The scheme structure, thresholds, and parameterization follow FuLeeca as described in [the paper](https://eprint.iacr.org/2023/377) and [the author’s thesis](https://google.com).
 
 
-### License
+## License
 
 No license file is currently included. If you intend to share/modify, please add an explicit license (e.g., MIT/BSD/Apache-2.0) at the root of the repo.
 
-### Citation
+## Citation
 
 If you use this code in academic work, please cite the accompanying thesis (author: Luis Alejandro Rubiano Guerrero). If you publish a bib entry, add a link/DOI to the PDF once available.
