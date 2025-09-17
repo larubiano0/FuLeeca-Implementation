@@ -44,7 +44,6 @@ def signature_generation(G_sec, n, m, w_sig, w_key, s, n_con, sec_level, p):
     while True:
         v, c, salt = simple_sign(m_prime, n, k, G_sec, s, p)
         v = concentrate(v, c, n, k, G_sec, n_con, w_sig, w_key, sec_level, p)
-        print(w_sig - 2*w_key, utils._Lee_weight(v, p), w_sig, utils.LMP(v, c, p), sec_level + 64)##
         if (w_sig - 2*w_key <= utils._Lee_weight(v, p) <= w_sig) and utils.LMP(v, c, p) >= sec_level + 64:
             return v, salt
 
